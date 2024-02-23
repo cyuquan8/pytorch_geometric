@@ -13,13 +13,15 @@ from torch_geometric.graphgym.models.layer import (
 from torch_geometric.graphgym.register import register_stage
 
 
-def GNNLayer(dim_in: int, dim_out: int, has_act: bool = True) -> GeneralLayer:
+def GNNLayer(dim_in: int, dim_out: int, edge_dim: int, 
+             has_act: bool = True) -> GeneralLayer:
     r"""Creates a GNN layer, given the specified input and output dimensions
     and the underlying configuration in :obj:`cfg`.
 
     Args:
         dim_in (int): The input dimension
         dim_out (int): The output dimension.
+        edge_dim (int): The edge dimension
         has_act (bool, optional): Whether to apply an activation function
             after the layer. (default: :obj:`True`)
     """
@@ -28,6 +30,7 @@ def GNNLayer(dim_in: int, dim_out: int, has_act: bool = True) -> GeneralLayer:
         layer_config=new_layer_config(
             dim_in,
             dim_out,
+            edge_dim,
             1,
             has_act=has_act,
             has_bias=False,
@@ -50,6 +53,7 @@ def GNNPreMP(dim_in: int, dim_out: int, num_layers: int) -> GeneralMultiLayer:
         layer_config=new_layer_config(
             dim_in,
             dim_out,
+            -1,
             num_layers,
             has_act=False,
             has_bias=False,
@@ -67,9 +71,10 @@ class GNNStackStage(torch.nn.Module):
     Args:
         dim_in (int): The input dimension
         dim_out (int): The output dimension.
+        edge_dim (int): The edge dimension
         num_layers (int): The number of layers.
     """
-    def __init__(self, dim_in, dim_out, num_layers):
+    def __init__(self, dim_in, dim_out, edge_dim, num_layers):
         super().__init__()
         self.num_layers = num_layers
         for i in range(num_layers):
@@ -77,7 +82,7 @@ class GNNStackStage(torch.nn.Module):
                 d_in = dim_in if i == 0 else dim_in + i * dim_out
             else:
                 d_in = dim_in if i == 0 else dim_out
-            layer = GNNLayer(d_in, dim_out)
+            layer = GNNLayer(d_in, dim_out, edge_dim)
             self.add_module(f'layer{i}', layer)
 
     def forward(self, batch):
@@ -104,6 +109,7 @@ class FeatureEncoder(torch.nn.Module):
     def __init__(self, dim_in: int):
         super().__init__()
         self.dim_in = dim_in
+        self.edge_dim = cfg.dataset.edge_dim
         if cfg.dataset.node_encoder:
             # Encode integer node features via `torch.nn.Embedding`:
             NodeEncoder = register.node_encoder_dict[
@@ -113,6 +119,7 @@ class FeatureEncoder(torch.nn.Module):
                 self.node_encoder_bn = BatchNorm1dNode(
                     new_layer_config(
                         cfg.gnn.dim_inner,
+                        -1,
                         -1,
                         -1,
                         has_act=False,
@@ -132,10 +139,13 @@ class FeatureEncoder(torch.nn.Module):
                         cfg.gnn.dim_inner,
                         -1,
                         -1,
+                        -1,
                         has_act=False,
                         has_bias=False,
                         cfg=cfg,
                     ))
+            # Update `edge_dim` to reflect the new dimension fo the edge features
+            self.edge_dim = cfg.gnn.dim_inner
 
     def forward(self, batch):
         for module in self.children():
@@ -169,6 +179,7 @@ class GNN(torch.nn.Module):
 
         self.encoder = FeatureEncoder(dim_in)
         dim_in = self.encoder.dim_in
+        edge_dim = self.encoder.edge_dim
 
         if cfg.gnn.layers_pre_mp > 0:
             self.pre_mp = GNNPreMP(dim_in, cfg.gnn.dim_inner,
@@ -176,6 +187,7 @@ class GNN(torch.nn.Module):
             dim_in = cfg.gnn.dim_inner
         if cfg.gnn.layers_mp > 0:
             self.mp = GNNStage(dim_in=dim_in, dim_out=cfg.gnn.dim_inner,
+                               edge_dim=edge_dim, 
                                num_layers=cfg.gnn.layers_mp)
         self.post_mp = GNNHead(dim_in=cfg.gnn.dim_inner, dim_out=dim_out)
 

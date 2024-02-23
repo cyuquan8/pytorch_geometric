@@ -18,6 +18,7 @@ from .register import (register_base, register_act, register_node_encoder,
                        register_config, register_dataset, register_loader,
                        register_optimizer, register_scheduler, register_loss,
                        register_train, register_metric)
+from .metric import *
 
 __all__ = classes = [
     'load_ckpt',

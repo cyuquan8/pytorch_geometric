@@ -20,6 +20,7 @@ class GNNNodeHead(torch.nn.Module):
             new_layer_config(
                 dim_in,
                 dim_out,
+                -1,
                 cfg.gnn.layers_post_mp,
                 has_act=False,
                 has_bias=True,
@@ -59,6 +60,7 @@ class GNNEdgeHead(torch.nn.Module):
                 new_layer_config(
                     dim_in * 2,
                     dim_out,
+                    -1,
                     cfg.gnn.layers_post_mp,
                     has_act=False,
                     has_bias=True,
@@ -75,6 +77,7 @@ class GNNEdgeHead(torch.nn.Module):
                 new_layer_config(
                     dim_in,
                     dim_in,
+                    -1,
                     cfg.gnn.layers_post_mp,
                     has_act=False,
                     has_bias=True,
@@ -116,7 +119,7 @@ class GNNGraphHead(torch.nn.Module):
     def __init__(self, dim_in: int, dim_out: int):
         super().__init__()
         self.layer_post_mp = MLP(
-            new_layer_config(dim_in, dim_out, cfg.gnn.layers_post_mp,
+            new_layer_config(dim_in, dim_out, -1, cfg.gnn.layers_post_mp,
                              has_act=False, has_bias=True, cfg=cfg))
         self.pooling_fun = register.pooling_dict[cfg.model.graph_pooling]
 

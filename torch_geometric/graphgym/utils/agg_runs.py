@@ -88,8 +88,8 @@ def agg_runs(dir, metric_best='auto'):
         validation performance. Options: auto, accuracy, auc.
 
     """
-    results = {'train': None, 'val': None}
-    results_best = {'train': None, 'val': None}
+    results = {'train': None, 'val': None, 'test': None}
+    results_best = {'train': None, 'val': None, 'test': None}
     for seed in os.listdir(dir):
         if is_seed(seed):
             dir_seed = osp.join(dir, seed)
@@ -109,7 +109,7 @@ def agg_runs(dir, metric_best='auto'):
                     stats_list[
                         eval("performance_np.{}()".format(cfg.metric_agg))][
                         'epoch']
-                print(best_epoch)
+                print(f"Seed {seed} {split} best epoch: {best_epoch}")
 
             for split in os.listdir(dir_seed):
                 if is_split(split):
@@ -120,7 +120,7 @@ def agg_runs(dir, metric_best='auto'):
                         stats for stats in stats_list
                         if stats['epoch'] == best_epoch
                     ][0]
-                    print(stats_best)
+                    print(f"Seed {seed} {split} best stats: {stats_best}")
                     stats_list = [[stats] for stats in stats_list]
                     if results[split] is None:
                         results[split] = stats_list
@@ -130,6 +130,22 @@ def agg_runs(dir, metric_best='auto'):
                         results_best[split] = [stats_best]
                     else:
                         results_best[split] += [stats_best]
+                elif split == 'test':
+                    dir_split = osp.join(dir_seed, split)
+                    if os.path.exists(dir_split):
+                        fname_stats = osp.join(dir_split, 'stats.json')
+                        stats_list = json_to_dict_list(fname_stats)
+                        stats_best = stats_list[0]
+                        print(f"Seed {seed} {split} best stats: {stats_best}")
+                        stats_list = [[stats] for stats in stats_list]
+                        if results[split] is None:
+                            results[split] = stats_list
+                        else:
+                            results[split] = join_list(results[split], stats_list)
+                        if results_best[split] is None:
+                            results_best[split] = [stats_best]
+                        else:
+                            results_best[split] += [stats_best]
     results = {k: v for k, v in results.items() if v is not None}
     results_best = {k: v for k, v in results_best.items() if v is not None}
     for key in results:

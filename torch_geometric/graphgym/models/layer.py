@@ -11,6 +11,7 @@ from torch_geometric.graphgym.contrib.layer.generalconv import (
     GeneralConvLayer,
     GeneralEdgeConvLayer,
 )
+from torch_geometric.graphgym.contrib.layer.gain_conv import GAINConv
 from torch_geometric.graphgym.register import register_layer
 from torch_geometric.nn import Linear as Linear_pyg
 
@@ -42,11 +43,13 @@ class LayerConfig:
 
     # other parameters.
     keep_edge: float = 0.5
+    use_edge_attr: bool = True
 
 
 def new_layer_config(
     dim_in: int,
     dim_out: int,
+    edge_dim: int,
     num_layers: int,
     has_act: bool,
     has_bias: bool,
@@ -57,6 +60,7 @@ def new_layer_config(
     Args:
         dim_in (int): The input feature dimension.
         dim_out (int): The output feature dimension.
+        edge_dim (int): The edge feature dimension
         num_layers (int): The number of hidden layers
         has_act (bool): Whether to apply an activation function after the
             layer.
@@ -70,7 +74,7 @@ def new_layer_config(
         mem_inplace=cfg.mem.inplace,
         dim_in=dim_in,
         dim_out=dim_out,
-        edge_dim=cfg.dataset.edge_dim,
+        edge_dim=edge_dim,
         has_l2norm=cfg.gnn.l2norm,
         dropout=cfg.gnn.dropout,
         has_act=has_act,
@@ -80,6 +84,7 @@ def new_layer_config(
         keep_edge=cfg.gnn.keep_edge,
         dim_inner=cfg.gnn.dim_inner,
         num_layers=num_layers,
+        use_edge_attr=cfg.gnn.use_edge_attr,
     )
 
 
@@ -301,14 +306,54 @@ class GATConv(torch.nn.Module):
     r"""A Graph Attention Network (GAT) layer."""
     def __init__(self, layer_config: LayerConfig, **kwargs):
         super().__init__()
-        self.model = pyg.nn.GATConv(
-            layer_config.dim_in,
-            layer_config.dim_out,
-            bias=layer_config.has_bias,
-        )
+        self.use_edge_attr = layer_config.use_edge_attr
+        if self.use_edge_attr:
+            self.model = pyg.nn.GATConv(
+                layer_config.dim_in,
+                layer_config.dim_out,
+                edge_dim=layer_config.edge_dim,
+                bias=layer_config.has_bias,
+            )
+        else:
+            self.model = pyg.nn.GATConv(
+                layer_config.dim_in,
+                layer_config.dim_out,
+                bias=layer_config.has_bias,
+            )
 
     def forward(self, batch):
-        batch.x = self.model(batch.x, batch.edge_index)
+        if self.use_edge_attr:
+            batch.x = self.model(batch.x, batch.edge_index, batch.edge_attr)
+        else:
+            batch.x = self.model(batch.x, batch.edge_index)
+        return batch
+
+
+@register_layer('gatv2conv')
+class GATv2Conv(torch.nn.Module):
+    r"""A Graph Attention Network Version 2 (GATv2) layer."""
+    def __init__(self, layer_config: LayerConfig, **kwargs):
+        super().__init__()
+        self.use_edge_attr = layer_config.use_edge_attr
+        if self.use_edge_attr:
+            self.model = pyg.nn.GATv2Conv(
+                layer_config.dim_in,
+                layer_config.dim_out,
+                edge_dim=layer_config.edge_dim,
+                bias=layer_config.has_bias,
+            )
+        else:
+            self.model = pyg.nn.GATv2Conv(
+                layer_config.dim_in,
+                layer_config.dim_out,
+                bias=layer_config.has_bias,
+            )
+
+    def forward(self, batch):
+        if self.use_edge_attr:
+            batch.x = self.model(batch.x, batch.edge_index, batch.edge_attr)
+        else:
+            batch.x = self.model(batch.x, batch.edge_index)
         return batch
 
 
@@ -329,11 +374,39 @@ class GINConv(torch.nn.Module):
         return batch
 
 
+@register_layer('gineconv')
+class GINEConv(torch.nn.Module):
+    r"""A Graph Isomorphism Network Edge (GINE) layer."""
+    def __init__(self, layer_config: LayerConfig, **kwargs):
+        super().__init__()
+        gine_nn = torch.nn.Sequential(
+            Linear_pyg(layer_config.dim_in, layer_config.dim_out),
+            torch.nn.ReLU(),
+            Linear_pyg(layer_config.dim_out, layer_config.dim_out),
+        )
+        self.use_edge_attr = layer_config.use_edge_attr
+        if self.use_edge_attr:
+            self.model = pyg.nn.GINEConv(
+                gine_nn,
+                edge_dim=layer_config.edge_dim,
+            )
+        else:
+            self.model = pyg.nn.GINEConv(gine_nn)
+
+    def forward(self, batch):
+        if self.use_edge_attr:
+            batch.x = self.model(batch.x, batch.edge_index, batch.edge_attr)
+        else:
+            batch.x = self.model(batch.x, batch.edge_index)
+        return batch
+
+
 @register_layer('splineconv')
 class SplineConv(torch.nn.Module):
     r"""A SplineCNN layer."""
     def __init__(self, layer_config: LayerConfig, **kwargs):
         super().__init__()
+        self.use_edge_attr = layer_config.use_edge_attr
         self.model = pyg.nn.SplineConv(
             layer_config.dim_in,
             layer_config.dim_out,
@@ -343,7 +416,10 @@ class SplineConv(torch.nn.Module):
         )
 
     def forward(self, batch):
-        batch.x = self.model(batch.x, batch.edge_index, batch.edge_attr)
+        if self.use_edge_attr:
+            batch.x = self.model(batch.x, batch.edge_index, batch.edge_attr)
+        else:
+            batch.x = self.model(batch.x, batch.edge_index)
         return batch
 
 
@@ -368,6 +444,7 @@ class GeneralEdgeConv(torch.nn.Module):
     r"""A general GNN layer with edge feature support."""
     def __init__(self, layer_config: LayerConfig, **kwargs):
         super().__init__()
+        self.use_edge_attr = layer_config.use_edge_attr
         self.model = GeneralEdgeConvLayer(
             layer_config.dim_in,
             layer_config.dim_out,
@@ -376,8 +453,11 @@ class GeneralEdgeConv(torch.nn.Module):
         )
 
     def forward(self, batch):
-        batch.x = self.model(batch.x, batch.edge_index,
-                             edge_feature=batch.edge_attr)
+        if self.use_edge_attr:
+            batch.x = self.model(batch.x, batch.edge_index,
+                                 edge_feature=batch.edge_attr)
+        else:
+            batch.x = self.model(batch.x, batch.edge_index)
         return batch
 
 
@@ -386,6 +466,7 @@ class GeneralSampleEdgeConv(torch.nn.Module):
     r"""A general GNN layer that supports edge features and edge sampling."""
     def __init__(self, layer_config: LayerConfig, **kwargs):
         super().__init__()
+        self.use_edge_attr = layer_config.use_edge_attr
         self.model = GeneralEdgeConvLayer(
             layer_config.dim_in,
             layer_config.dim_out,
@@ -398,5 +479,41 @@ class GeneralSampleEdgeConv(torch.nn.Module):
         edge_mask = torch.rand(batch.edge_index.shape[1]) < self.keep_edge
         edge_index = batch.edge_index[:, edge_mask]
         edge_feature = batch.edge_attr[edge_mask, :]
-        batch.x = self.model(batch.x, edge_index, edge_feature=edge_feature)
+        if self.use_edge_attr:
+            batch.x = self.model(batch.x, batch.edge_index,
+                                 edge_feature=batch.edge_attr)
+        else:
+            batch.x = self.model(batch.x, batch.edge_index)
+        return batch
+
+@register_layer('gainconv')
+class GAINConv_(torch.nn.Module):
+    r"""A Graph Attention Isomorphism Network (GAIN) layer."""
+    def __init__(self, layer_config: LayerConfig, **kwargs):
+        super().__init__()
+        gain_nn = torch.nn.Sequential(
+            Linear_pyg(layer_config.dim_in, layer_config.dim_out),
+            torch.nn.ReLU(),
+            Linear_pyg(layer_config.dim_out, layer_config.dim_out),
+        )
+        self.use_edge_attr = layer_config.use_edge_attr
+        if self.use_edge_attr:
+            self.model = GAINConv(
+                gain_nn,
+                layer_config.dim_in,
+                layer_config.dim_out,
+                edge_dim=layer_config.edge_dim,
+            )
+        else:
+            self.model = GAINConv(
+                gain_nn,
+                layer_config.dim_in,
+                layer_config.dim_out,
+            )
+
+    def forward(self, batch):
+        if self.use_edge_attr:
+            batch.x = self.model(batch.x, batch.edge_index, batch.edge_attr)[0]
+        else:
+            batch.x = self.model(batch.x, batch.edge_index)[0]
         return batch

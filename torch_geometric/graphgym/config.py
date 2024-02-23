@@ -397,6 +397,9 @@ def set_cfg(cfg):
     # clear cached feature_new
     cfg.gnn.clear_feature = True
 
+    # Whether to use edge attributes
+    cfg.gnn.use_edge_attr = True
+
     # ----------------------------------------------------------------------- #
     # Optimizer options
     # ----------------------------------------------------------------------- #
@@ -452,6 +455,13 @@ def set_cfg(cfg):
 
 def assert_cfg(cfg):
     r"""Checks config values, do necessary post processing to the configs."""
+    non_edge_gnn_layer_type = [
+        'gcnconv', 
+        'sageconv', 
+        'ginconv', 
+        'generalconv'
+    ]
+
     if cfg.dataset.task not in ['node', 'edge', 'graph', 'link_pred']:
         raise ValueError(f"Task '{cfg.dataset.task}' not supported. Must be "
                          f"one of node, edge, graph, link_pred")
@@ -473,6 +483,12 @@ def assert_cfg(cfg):
         logging.warning('Layers after message passing should be >=1')
     if cfg.gnn.head == 'default':
         cfg.gnn.head = cfg.dataset.task
+    if cfg.gnn.layer_type in non_edge_gnn_layer_type and \
+        cfg.gnn.use_edge_attr:
+        cfg.gnn.use_edge_attr = False
+        logging.warning(f"{cfg.gnn.layer_type} don't use edge attributes. "
+                        f"gnn.use_edge_attr is changed to False.")
+
     cfg.run_dir = cfg.out_dir
 
 

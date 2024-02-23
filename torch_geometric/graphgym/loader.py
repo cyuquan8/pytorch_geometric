@@ -1,6 +1,7 @@
 import os.path as osp
 from typing import Callable
 
+import logging
 import torch
 
 import torch_geometric.graphgym.register as register
@@ -114,7 +115,11 @@ def load_ogb(name, dataset_dir):
     from ogb.nodeproppred import PygNodePropPredDataset
 
     if name[:4] == 'ogbn':
-        dataset = PygNodePropPredDataset(name=name, root=dataset_dir)
+        # ogbn-proteins doesn't have node features
+        if name == 'ogbn-proteins':
+            dataset = PygNodePropPredDataset(name=name, root=dataset_dir, transform=T.Constant())
+        else:
+            dataset = PygNodePropPredDataset(name=name, root=dataset_dir)
         splits = dataset.get_idx_split()
         split_names = ['train_mask', 'val_mask', 'test_mask']
         for i, key in enumerate(splits.keys()):
@@ -125,7 +130,11 @@ def load_ogb(name, dataset_dir):
                          edge_index.shape[1])
 
     elif name[:4] == 'ogbg':
-        dataset = PygGraphPropPredDataset(name=name, root=dataset_dir)
+        # ogbg-ppa doesn't have node features
+        if name == 'ogbg-ppa':
+            dataset = PygGraphPropPredDataset(name=name, root=dataset_dir, transform=T.Constant())
+        else:
+            dataset = PygGraphPropPredDataset(name=name, root=dataset_dir)
         splits = dataset.get_idx_split()
         split_names = [
             'train_graph_index', 'val_graph_index', 'test_graph_index'
@@ -135,7 +144,11 @@ def load_ogb(name, dataset_dir):
             set_dataset_attr(dataset, split_names[i], id, len(id))
 
     elif name[:4] == "ogbl":
-        dataset = PygLinkPropPredDataset(name=name, root=dataset_dir)
+        # ogbn-ddi doesn't have node features
+        if name == 'ogbl-ddi':
+            dataset = PygLinkPropPredDataset(name=name, root=dataset_dir, transform=T.Constant())
+        else:
+            dataset = PygLinkPropPredDataset(name=name, root=dataset_dir)
         splits = dataset.get_edge_split()
         id = splits['train']['edge'].T
         if cfg.dataset.resample_negative:
@@ -212,6 +225,16 @@ def set_dataset_info(dataset):
             cfg.share.dim_out = dataset._data.y.shape[1]
     except Exception:
         cfg.share.dim_out = 1
+
+    # get edge_dim
+    if dataset._data.edge_attr == None:
+        cfg.dataset.edge_dim = None
+        if cfg.gnn.use_edge_attr:
+            cfg.gnn.use_edge_attr = False
+            logging.warning("Dataset does not have edge attributes. "
+                            "Change gnn.use_edge_attr to False.")
+    else:
+        cfg.dataset.edge_dim = dataset._data.edge_attr.shape[1]
 
     # count number of dataset splits
     cfg.share.num_splits = 1
