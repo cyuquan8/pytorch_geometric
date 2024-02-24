@@ -133,8 +133,9 @@ def load_ogb(name, dataset_dir):
         if name == 'ogbn-mag':
             # consider only paper-paper edge index for ogbn-mag
             edge_index = to_undirected(dataset._data.edge_index_dict[('paper', 'cites', 'paper')])
-            # add node attributes
+            # add node attributes and labels
             set_dataset_attr(dataset, 'x', dataset.x_dict['paper'], dataset.x_dict['paper'][0])
+            set_dataset_attr(dataset, 'y', dataset.y_dict['paper'], dataset.y_dict['paper'][0])
         else:
             edge_index = to_undirected(dataset._data.edge_index)
         set_dataset_attr(dataset, 'edge_index', edge_index,
