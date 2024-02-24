@@ -123,9 +123,20 @@ def load_ogb(name, dataset_dir):
         splits = dataset.get_idx_split()
         split_names = ['train_mask', 'val_mask', 'test_mask']
         for i, key in enumerate(splits.keys()):
-            mask = index_to_mask(splits[key], size=dataset._data.y.shape[0])
-            set_dataset_attr(dataset, split_names[i], mask, len(mask))
-        edge_index = to_undirected(dataset._data.edge_index)
+            # consider only paper-paper relations for ogbn-mag
+            if name == 'ogbn-mag':
+                mask = index_to_mask(splits[key]['paper'], size=dataset._data.y_dict['paper'].shape[0])
+                set_dataset_attr(dataset, split_names[i], mask, len(mask))
+            else:
+                mask = index_to_mask(splits[key], size=dataset._data.y.shape[0])
+                set_dataset_attr(dataset, split_names[i], mask, len(mask))
+        if name == 'ogbn-mag':
+            # consider only paper-paper edge index for ogbn-mag
+            edge_index = to_undirected(dataset._data.edge_index_dict[('paper', 'cites', 'paper')])
+            # add node attributes
+            set_dataset_attr(dataset, 'x', dataset.x_dict['paper'], dataset.x_dict['paper'][0])
+        else:
+            edge_index = to_undirected(dataset._data.edge_index)
         set_dataset_attr(dataset, 'edge_index', edge_index,
                          edge_index.shape[1])
 
@@ -155,9 +166,12 @@ def load_ogb(name, dataset_dir):
             set_dataset_attr(dataset, 'train_pos_edge_index', id, id.shape[1])
             dataset.transform = neg_sampling_transform
         else:
-            id_neg = negative_sampling(edge_index=id,
-                                       num_nodes=dataset._data.num_nodes,
-                                       num_neg_samples=id.shape[1])
+            if name == 'ogbl-vessel':
+                id_neg = splits['train']['edge_neg'].T
+            else:
+                id_neg = negative_sampling(edge_index=id,
+                                           num_nodes=dataset._data.num_nodes,
+                                           num_neg_samples=id.shape[1])
             id_all = torch.cat([id, id_neg], dim=-1)
             label = create_link_label(id, id_neg)
             set_dataset_attr(dataset, 'train_edge_index', id_all,

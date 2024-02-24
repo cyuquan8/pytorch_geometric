@@ -13,7 +13,7 @@ def ogbn_products_evaluator(true, pred, task_type):
 	# (num_nodes, num_tasks == 1), (num_nodes, num_classes == 47)
 	true, pred_score = torch.cat(true), torch.cat(pred)
 	# (num_nodes, num_tasks == 1)
-	pred_int = pred_score.max(dim=1)[1]
+	pred_int = pred_score.max(dim=1, keepdim=True)[1]
 	# float
 	evaluator = Evaluator(name=cfg.dataset.name)
 	acc = evaluator.eval({'y_true': true, 'y_pred': pred_int})['acc']
@@ -47,7 +47,7 @@ def ogbn_arxiv_evaluator(true, pred, task_type):
 	# (num_nodes, num_tasks == 1), (num_nodes, num_classes == 40)
 	true, pred_score = torch.cat(true), torch.cat(pred)
 	# (num_nodes, num_tasks == 1)
-	pred_int = pred_score.max(dim=1)[1]
+	pred_int = pred_score.max(dim=1, keepdim=True)[1]
 	# float
 	evaluator = Evaluator(name=cfg.dataset.name)
 	acc = evaluator.eval({'y_true': true, 'y_pred': pred_int})['acc']
@@ -64,7 +64,7 @@ def ogbn_papers100M_evaluator(true, pred, task_type):
 	# (num_nodes, num_tasks == 1), (num_nodes, num_classes == 172)
 	true, pred_score = torch.cat(true), torch.cat(pred)
 	# (num_nodes, num_tasks == 1)
-	pred_int = pred_score.max(dim=1)[1]
+	pred_int = pred_score.max(dim=1, keepdim=True)[1]
 	# float
 	evaluator = Evaluator(name=cfg.dataset.name)
 	acc = evaluator.eval({'y_true': true, 'y_pred': pred_int})['acc']
@@ -81,7 +81,7 @@ def ogbn_mag_evaluator(true, pred, task_type):
 	# (num_nodes, num_tasks == 1), (num_nodes, num_classes == 349)
 	true, pred_score = torch.cat(true), torch.cat(pred)
 	# (num_nodes, num_tasks == 1)
-	pred_int = pred_score.max(dim=1)[1]
+	pred_int = pred_score.max(dim=1, keepdim=True)[1]
 	# float
 	evaluator = Evaluator(name=cfg.dataset.name)
 	acc = evaluator.eval({'y_true': true, 'y_pred': pred_int})['acc']
@@ -204,7 +204,7 @@ def ogbg_ppa_evaluator(true, pred, task_type):
 	# (batch, num_tasks == 1), (batch, num_classes == 37)
 	true, pred_score = torch.cat(true), torch.cat(pred)
 	# (batch, num_tasks == 1)
-	pred_int = pred_score.max(dim=1)[1]
+	pred_int = pred_score.max(dim=1, keepdim=True)[1]
 	# float
 	evaluator = Evaluator(name=cfg.dataset.name)
 	acc = evaluator.eval({'y_true': true, 'y_pred': pred_int})['acc']

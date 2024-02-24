@@ -2,7 +2,7 @@ out_dir: results/ogb/ogbg
 custom_metrics: ['ogbn_proteins_rocauc']
 metric_best: 'ogbn_proteins_rocauc'
 dataset:
-  format: ogbn-proteins
+  format: OGB
   name: ogbn-proteins
   task: node
   task_type: classification_binary
