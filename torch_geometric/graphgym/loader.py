@@ -194,10 +194,10 @@ def load_ogb(name, dataset_dir):
         raise ValueError('OGB dataset: {} non-exist')
 
     # dtype int to float
-    if hasattr(dataset._data, 'x'):
+    if hasattr(dataset._data, 'x') and name != 'ogbg-molhiv' and name != 'ogbg-molpcba':
         if dataset._data.x is not None and dataset._data.x.dtype == torch.long:
             dataset._data.x = dataset._data.x.type(dtype=torch.float)
-    if hasattr(dataset._data, 'edge_attr'):
+    if hasattr(dataset._data, 'edge_attr') and name != 'ogbg-molhiv' and name != 'ogbg-molpcba':
         if dataset._data.edge_attr is not None and dataset._data.edge_attr.dtype == torch.long:
             dataset._data.edge_attr = dataset._data.edge_attr.type(dtype=torch.float)
 
