@@ -192,6 +192,15 @@ def load_ogb(name, dataset_dir):
 
     else:
         raise ValueError('OGB dataset: {} non-exist')
+
+    # dtype int to float
+    if hasattr(dataset._data, 'x'):
+        if dataset._data.x is not None and dataset._data.x.dtype == torch.long:
+            dataset._data.x = dataset._data.x.type(dtype=torch.float)
+    if hasattr(dataset._data, 'edge_attr'):
+        if dataset._data.edge_attr is not None and dataset._data.edge_attr.dtype == torch.long:
+            dataset._data.edge_attr = dataset._data.edge_attr.type(dtype=torch.float)
+
     return dataset
 
 
