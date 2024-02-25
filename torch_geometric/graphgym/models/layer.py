@@ -503,12 +503,14 @@ class GAINConv_(torch.nn.Module):
                 layer_config.dim_in,
                 layer_config.dim_out,
                 edge_dim=layer_config.edge_dim,
+                bias=layer_config.has_bias,
             )
         else:
             self.model = GAINConv(
                 gain_nn,
                 layer_config.dim_in,
                 layer_config.dim_out,
+                bias=layer_config.has_bias,
             )
 
     def forward(self, batch):
