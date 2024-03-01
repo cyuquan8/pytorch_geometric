@@ -2,7 +2,7 @@
 
 CONFIG=${CONFIG:-ogbg_molpcba_cfg}
 GRID=${GRID:-ogbg_molpcba_grid}
-REPEAT=${REPEAT:-10}
+REPEAT=${REPEAT:-3}
 MAX_JOBS=${MAX_JOBS:-8}
 SLEEP=${SLEEP:-1}
 MAIN=${MAIN:-main}

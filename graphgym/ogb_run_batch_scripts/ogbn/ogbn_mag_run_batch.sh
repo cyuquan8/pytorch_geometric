@@ -2,7 +2,7 @@
 
 CONFIG=${CONFIG:-ogbn_mag_cfg}
 GRID=${GRID:-ogbn_mag_grid}
-REPEAT=${REPEAT:-10}
+REPEAT=${REPEAT:-3}
 MAX_JOBS=${MAX_JOBS:-8}
 SLEEP=${SLEEP:-1}
 MAIN=${MAIN:-main}

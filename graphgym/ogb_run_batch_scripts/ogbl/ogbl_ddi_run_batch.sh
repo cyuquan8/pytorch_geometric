@@ -2,7 +2,7 @@
 
 CONFIG=${CONFIG:-ogbl_ddi_cfg}
 GRID=${GRID:-ogbl_ddi_grid}
-REPEAT=${REPEAT:-10}
+REPEAT=${REPEAT:-3}
 MAX_JOBS=${MAX_JOBS:-8}
 SLEEP=${SLEEP:-1}
 MAIN=${MAIN:-main}
