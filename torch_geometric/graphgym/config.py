@@ -269,7 +269,7 @@ def set_cfg(cfg):
     # GraphSAINTRandomWalkSampler: random walk length
     cfg.train.walk_length = 4
 
-    # NeighborSampler: number of sampled nodes per layer
+    # NeighborSampler/LinkNeighborLoader: number of sampled nodes per layer
     cfg.train.neighbor_sizes = [20, 15, 10, 5]
 
     # ----------------------------------------------------------------------- #
@@ -288,6 +288,9 @@ def set_cfg(cfg):
 
     # Radius: same, extend. same: same as cfg.gnn.layers_mp, extend: layers+1
     cfg.val.radius = 'extend'
+
+    # NeighborSampler/LinkNeighborLoader: number of sampled nodes per layer
+    cfg.val.neighbor_sizes = [20, 15, 10, 5]
 
     # ----------------------------------------------------------------------- #
     # Model options

@@ -14,7 +14,11 @@ train:
   batch_size: 128
   eval_period: 1
   ckpt_period: 100
-  sampler: full_batch
+  sampler: link_neighbor
+  neighbor_sizes: [20, 15, 10, 5]
+val:
+  sampler: link_neighbor
+  neighbor_sizes: [20, 15, 10, 5]
 model:
   type: gnn
   loss_fun: cross_entropy

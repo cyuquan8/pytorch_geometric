@@ -24,12 +24,14 @@ from torch_geometric.graphgym.models.transform import (
 from torch_geometric.loader import (
     ClusterLoader,
     DataLoader,
+    LinkNeighborLoader,
+    NeighborLoader,
     GraphSAINTEdgeSampler,
     GraphSAINTNodeSampler,
     GraphSAINTRandomWalkSampler,
-    NeighborSampler,
     RandomNodeLoader,
 )
+from torch_geometric.sampler import NegativeSampling
 from torch_geometric.utils import (
     index_to_mask,
     negative_sampling,
@@ -165,7 +167,11 @@ def load_ogb(name, dataset_dir):
         id = splits['train']['edge'].T
         if cfg.dataset.resample_negative:
             set_dataset_attr(dataset, 'train_pos_edge_index', id, id.shape[1])
-            dataset.transform = neg_sampling_transform
+            if cfg.train.sampler != 'link_neighbor':
+                if name == 'ogbl-ddi':
+                    dataset.transform = T.Compose([T.Constant(), neg_sampling_transform])
+                else:
+                    dataset.transform = neg_sampling_transform
         else:
             if name == 'ogbl-vessel':
                 id_neg = splits['train']['edge_neg'].T
@@ -284,15 +290,15 @@ def create_dataset():
     return dataset
 
 
-def get_loader(dataset, sampler, batch_size, shuffle=True):
+def get_loader(dataset, sampler, batch_size, shuffle=True, split='train'):
     pw = cfg.num_workers > 0
     if sampler == "full_batch" or len(dataset) > 1:
         loader_train = DataLoader(dataset, batch_size=batch_size,
                                   shuffle=shuffle, num_workers=cfg.num_workers,
                                   pin_memory=True, persistent_workers=pw)
     elif sampler == "neighbor":
-        loader_train = NeighborSampler(
-            dataset[0], sizes=cfg.train.neighbor_sizes[:cfg.gnn.layers_mp],
+        loader_train = NeighborLoader(
+            dataset[0], num_neighbors=cfg.train.neighbor_sizes[:cfg.gnn.layers_mp],
             batch_size=batch_size, shuffle=shuffle,
             num_workers=cfg.num_workers, pin_memory=True)
     elif sampler == "random_node":
@@ -342,7 +348,57 @@ def get_loader(dataset, sampler, batch_size, shuffle=True):
             pin_memory=True,
             persistent_workers=pw,
         )
-
+    elif sampler == 'link_neighbor':
+        if cfg.dataset.format == 'PyG':
+            name = cfg.dataset.name
+        elif cfg.dataset.format == 'OGB':
+            name = cfg.dataset.name.replace('_', '-')
+        if name[:4] == "ogbl":
+            splits = dataset.get_edge_split()
+            if cfg.dataset.resample_negative:
+                neg_samp = NegativeSampling(
+                    mode='binary',
+                    amount=cfg.dataset.edge_negative_sampling_ratio,
+                )
+                if split == 'train':
+                    edge_label_index = splits['train']['edge'].T
+                    delattr(dataset.data, 'train_pos_edge_index')
+                elif split == 'val':
+                    edge_label_index = splits['valid']['edge'].T
+                elif split == 'test':
+                    edge_label_index = splits['test']['edge'].T
+                edge_label = torch.ones(edge_label_index.size(1))
+            else:
+                neg_samp = None
+                if split == 'train':
+                    edge_label_index = dataset.data.train_edge_index
+                    edge_label = dataset.data.train_edge_label
+                    delattr(dataset.data, 'train_edge_index')
+                    delattr(dataset.data, 'train_edge_label')
+                elif split == 'val':
+                    edge_label_index = dataset.data.val_edge_index
+                    edge_label = dataset.data.val_edge_label
+                    delattr(dataset.data, 'val_edge_index')
+                    delattr(dataset.data, 'val_edge_label')
+                elif split == 'test':
+                    edge_label_index = dataset.data.test_edge_index
+                    edge_label = dataset.data.test_edge_label
+                    delattr(dataset.data, 'test_edge_index')
+                    delattr(dataset.data, 'test_edge_label')
+            loader_train = LinkNeighborLoader(
+                data=dataset[0],
+                num_neighbors=cfg.train.neighbor_sizes[:cfg.gnn.layers_mp] \
+                    if split == 'train' else cfg.val.neighbor_sizes[:cfg.gnn.layers_mp],
+                edge_label_index=edge_label_index,
+                edge_label=edge_label,
+                neg_sampling=neg_samp,
+                batch_size=batch_size, 
+                shuffle=shuffle,
+                num_workers=cfg.num_workers, 
+                pin_memory=True,
+            )
+        else:
+            raise NotImplementedError(f"'{sampler}' is not implemented for {cfg.dataset.name}")
     else:
         raise NotImplementedError(f"'{sampler}' is not implemented")
 
@@ -361,27 +417,28 @@ def create_loader():
         id = dataset.data['train_graph_index']
         loaders = [
             get_loader(dataset[id], cfg.train.sampler, cfg.train.batch_size,
-                       shuffle=True)
+                       shuffle=True, split='train')
         ]
         delattr(dataset.data, 'train_graph_index')
     else:
         loaders = [
             get_loader(dataset, cfg.train.sampler, cfg.train.batch_size,
-                       shuffle=True)
+                       shuffle=True, split='train')
         ]
 
     # val and test loaders
     for i in range(cfg.share.num_splits - 1):
+        split = 'val' if i == 0 else 'test'
         if cfg.dataset.task == 'graph':
             split_names = ['val_graph_index', 'test_graph_index']
             id = dataset.data[split_names[i]]
             loaders.append(
                 get_loader(dataset[id], cfg.val.sampler, cfg.train.batch_size,
-                           shuffle=False))
+                           shuffle=False, split=split))
             delattr(dataset.data, split_names[i])
         else:
             loaders.append(
                 get_loader(dataset, cfg.val.sampler, cfg.train.batch_size,
-                           shuffle=False))
+                           shuffle=False, split=split))
 
     return loaders

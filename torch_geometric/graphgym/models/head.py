@@ -92,6 +92,8 @@ class GNNEdgeHead(torch.nn.Module):
                                  f"'{cfg.model.edge_decoding}'")
 
     def _apply_index(self, batch):
+        if hasattr(batch, 'edge_label_index') and hasattr(batch, 'edge_label'):
+            return batch.x[batch.edge_label_index], batch.edge_label
         index = f'{batch.split}_edge_index'
         label = f'{batch.split}_edge_label'
         return batch.x[batch[index]], batch[label]
