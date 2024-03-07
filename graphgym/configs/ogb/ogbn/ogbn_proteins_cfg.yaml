@@ -15,10 +15,10 @@ train:
   eval_period: 1
   ckpt_period: 100
   sampler: neighbor
-  neighbor_sizes: [20, 15, 10, 5]
+  neighbor_sizes: [20, 10]
 val:
   sampler: neighbor
-  neighbor_sizes: [20, 15, 10, 5]
+  neighbor_sizes: [20, 10]
 model:
   type: gnn
   loss_fun: cross_entropy
