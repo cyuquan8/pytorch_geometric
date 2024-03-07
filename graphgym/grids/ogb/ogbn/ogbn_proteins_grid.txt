@@ -3,12 +3,14 @@
 # Line breaks are used to union different grid search spaces
 # Feel free to add '#' to add comments
 
+# train design space	
+train.batch_size b_size [128]
 # gnn design space
 gnn.layers_pre_mp l_pre [2]
-gnn.layers_mp l_mp [1]
+gnn.layers_mp l_mp [2,4]
 gnn.layers_post_mp l_post [2]
-gnn.dim_inner d_in [8,16]
-gnn.layer_type l_typ ['gcnconv','sageconv','gatconv','gatv2conv','ginconv','gainconv']
+gnn.dim_inner d_in [32,128]
+gnn.layer_type l_typ ['gcnconv','gatconv','gatv2conv','ginconv','gainconv']
 gnn.stage_type stg_typ ['stack','skipsum','skipconcat']
 # optim design space
 optim.base_lr lr [0.01]

@@ -208,6 +208,9 @@ def load_ogb(name, dataset_dir):
         if dataset._data.edge_attr is not None and dataset._data.edge_attr.dtype == torch.long:
             dataset._data.edge_attr = dataset._data.edge_attr.type(dtype=torch.float)
 
+    if not isinstance(dataset._data.num_nodes, int):
+        dataset._data.num_nodes = int(dataset._data.num_nodes)
+
     return dataset
 
 
