@@ -29,11 +29,9 @@ def ogbn_proteins_evaluator(true, pred, task_type):
 
 	# (num_nodes, num_tasks == 112), (num_nodes, num_tasks == 112)
 	true, pred_score = torch.cat(true), torch.cat(pred)
-	# (num_nodes, num_tasks == 112)
-	pred_int = (pred_score > cfg.model.thresh).long()
 	# float
 	evaluator = Evaluator(name=cfg.dataset.name)
-	rocauc = evaluator.eval({'y_true': true, 'y_pred': pred_int})['rocauc']
+	rocauc = evaluator.eval({'y_true': true, 'y_pred': pred_score})['rocauc']
 
 	return rocauc
 
@@ -169,11 +167,9 @@ def ogbg_molhiv_evaluator(true, pred, task_type):
 
 	# (batch, num_tasks == 1), (batch, )
 	true, pred_score = torch.cat(true), torch.cat(pred)
-	# (batch, )
-	pred_int = (pred_score > cfg.model.thresh).long()
 	# float
 	evaluator = Evaluator(name=cfg.dataset.name)
-	rocauc = evaluator.eval({'y_true': true, 'y_pred': pred_int[:, None]})['rocauc']
+	rocauc = evaluator.eval({'y_true': true, 'y_pred': pred_score[:, None]})['rocauc']
 
 	return rocauc
 
