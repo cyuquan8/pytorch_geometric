@@ -1,4 +1,4 @@
-out_dir: results/ogb/ogbn
+out_dir: results
 custom_metrics: ['ogbn_mag_accuracy']
 metric_best: 'ogbn_mag_accuracy'
 dataset:

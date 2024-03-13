@@ -1,4 +1,4 @@
-out_dir: results/ogb/ogbl
+out_dir: results
 custom_metrics: ['ogbl_ppa_hits_100']
 metric_best: 'ogbl_ppa_hits_100'
 dataset:

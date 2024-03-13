@@ -23,4 +23,4 @@ bash parallel.sh configs/ogb/ogbn/${CONFIG}_grid_${GRID} $REPEAT $MAX_JOBS $SLEE
 bash parallel.sh configs/ogb/ogbn/${CONFIG}_grid_${GRID} $REPEAT $MAX_JOBS $SLEEP $MAIN
 
 # aggregate results for the batch
-python agg_batch.py --dir results/ogb/ogbn/${CONFIG}_grid_${GRID} --metric $METRIC
+python agg_batch.py --dir results/${CONFIG}_grid_${GRID} --metric $METRIC

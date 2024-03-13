@@ -1,4 +1,4 @@
-out_dir: results/ogb/ogbg
+out_dir: results
 custom_metrics: ['ogbg_molhiv_rocauc']
 metric_best: 'ogbg_molhiv_rocauc'
 dataset:

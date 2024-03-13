@@ -1,4 +1,4 @@
-out_dir: results/ogb/ogbg
+out_dir: results
 custom_metrics: ['ogbg_molpcba_average_precision']
 metric_best: 'ogbg_molpcba_average_precision'
 dataset:

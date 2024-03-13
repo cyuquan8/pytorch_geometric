@@ -1,4 +1,4 @@
-out_dir: results/ogb/ogbl
+out_dir: results
 custom_metrics: ['ogbl_vessel_rocauc']
 metric_best: 'ogbl_vessel_rocauc'
 dataset:
