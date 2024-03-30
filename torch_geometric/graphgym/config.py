@@ -515,6 +515,7 @@ def load_cfg(cfg, args):
         cfg (CfgNode): Configuration node
         args (ArgumentParser): Command argument parser
     """
+    cfg.set_new_allowed(True)
     cfg.merge_from_file(args.cfg_file)
     cfg.merge_from_list(args.opts)
     assert_cfg(cfg)
