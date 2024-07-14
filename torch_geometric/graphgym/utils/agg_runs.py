@@ -54,7 +54,7 @@ def agg_dict_list(dict_list):
         if key != 'epoch':
             value = np.array([dict[key] for dict in dict_list])
             dict_agg[key] = np.mean(value).round(cfg.round)
-            dict_agg[f'{key}_std'] = np.std(value).round(cfg.round)
+            dict_agg[f'{key}_std'] = np.std(value, ddof=1).round(cfg.round)
     return dict_agg
 
 
